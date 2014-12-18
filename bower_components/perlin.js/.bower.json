@@ -1,0 +1,14 @@
+{
+  "name": "perlin.js",
+  "homepage": "https://github.com/wwwtyro/perlin.js",
+  "_release": "f67efda963",
+  "_resolution": {
+    "type": "branch",
+    "branch": "master",
+    "commit": "f67efda963f9796d4ab78b8c9706a5c9e84caae6"
+  },
+  "_source": "git://github.com/wwwtyro/perlin.js.git",
+  "_target": "*",
+  "_originalSource": "wwwtyro/perlin.js",
+  "_direct": true
+}
