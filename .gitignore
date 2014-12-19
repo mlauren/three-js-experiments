@@ -1,4 +1,6 @@
+Ignore everything coming from 3rd party 
 bower_components/
+three.js/
 
 .DS_Store
 .AppleDouble

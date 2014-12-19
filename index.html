@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>three.js webgl - mirror</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <style>
+      body {
+        color: #888888;
+        font-family:Monospace;
+        font-size:13px;
+
+        background-color: #000;
+        margin: 0px;
+        overflow: hidden;
+      }
+
+      #info {
+        position: absolute;
+        top: 0px;
+        width: 200px;
+        left: calc(50% - 100px);
+        text-align: center;
+      }
+
+      a {
+        color: #00f;
+      }
+    </style>
+  </head>
+  <body>
+
+    <div id="container"></div>
+    <div id="info"><a href="http://threejs.org" target="_blank">three.js</a> - mirror
+    </div>
+
+    <script src="lib/three.js"></script>
+    <script src="lib/js/Mirror.js"></script>
+    <script src="lib/js/controls/OrbitControls.js"></script>
+
+    <script>
+      var WIDTH = window.innerWidth;
+      var HEIGHT = window.innerHeight;
+
+      var VIEW_ANGLE = 45;
+      var ASPECT = WIDTH / HEIGHT;
+
+      var NEAR = 1;
+      var FAR = 500;
+
+      var camera, scene, renderer;
+
+      var cameraControls;
+
+      var verticalMirror, groundMirror;
+      var sphereGroup, smallSphere;
+
+      function init() {
+        // - Renderer - //
+        renderer = new THREE.WebGLRenderer();
+        renderer.setSize( WIDTH, HEIGHT );
+
+        // - Scene - //
+        scene = new THREE.Scene();
+
+        // - Camera - //
+        camera = new THREE.PerspectiveCamera( VIEW_ANGLE, ASPECT, NEAR, FAR);
+        camera.position.set( 0, 75, 160 );
+
+        // - Orbit Camera Controls - //
+        cameraControls = new THREE.OrbitControls( camera, renderer.domElement );
+        cameraControls.target.set( 0, 40, 0 );
+        cameraControls.maxDistance = 200;
+        cameraControls.minDistance = 10;
+        cameraControls.update();
+
+        // - Update the Camera - //
+        var container = document.getElementById( 'container' );
+        container.appendChild( renderer.domElement );
+
+      }
+
+      function fillScene() {
+
+      }
+
+      function render() {
+
+        renderer.render(scene, camera);
+      }
+
+      function update() {
+
+        render();
+      }
+
+      init();
+      fillScene();
+      update();
+
+    </script>
+    <div id="container">
+      
+    </div>
+  </body>
