@@ -2,6 +2,11 @@ Ignore everything coming from 3rd party
 bower_components/
 three.js/
 
+# Ignore Server Files and Local Files
+cgi-bin/
+.htaccess
+favicon.ico
+
 .DS_Store
 .AppleDouble
 .LSOverride
