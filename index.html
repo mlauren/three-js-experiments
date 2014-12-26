@@ -31,15 +31,47 @@
   <body>
 
     <div id="container"></div>
-    <div id="info"><a href="http://threejs.org" target="_blank">gem minor</a>
-    </div>
 
     <script src="lib/three.js"></script>
+    <script src="lib/physi.js"></script>
     <script src="lib/js/Mirror.js"></script>
     <script src="lib/js/WaterShader.js"></script>
     <script src="lib/js/controls/OrbitControls.js"></script>
 
+
+    <!-- ---------------- Custom Shader Code ------------------------ -->
+    <script id="vertexShader" type="x-shader/x-vertex">
+    uniform vec3 viewVector;
+    uniform float c;
+    uniform float p;
+    varying float intensity;
+    void main()
+    {
+      vec3 vNormal = normalize( normalMatrix * normal );
+      vec3 vNormel = normalize( normalMatrix * viewVector );
+      intensity = pow( c - dot(vNormal, vNormel), p );
+
+      gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+    }
+    </script>
+
+    <!-- fragment shader a.k.a. pixel shader -->
+    <script id="fragmentShader" type="x-shader/x-vertex">
+    uniform vec3 glowColor;
+    varying float intensity;
+    void main()
+    {
+      vec3 glow = glowColor * intensity;
+        gl_FragColor = vec4( glow, 1.0 );
+    }
+    </script>
+    <!-- ----------------------------------------------------------- -->
+
+
     <script>
+      Physijs.scripts.worker = 'lib/physijs_worker.js';
+      Physijs.scripts.ammo = 'ammo.js';
+
       var WIDTH = window.innerWidth;
       var HEIGHT = window.innerHeight;
 
@@ -61,6 +93,7 @@
       var lightVal = 0, lightDir = 1;
 
       var polyhedron;
+      var group = new THREE.Group();
 
       function init() {
         // - Renderer - //
@@ -68,8 +101,15 @@
         renderer.setSize( WIDTH, HEIGHT );
 
         // - Scene - //
-        scene = new THREE.Scene();
-        // scene.fog = new THREE.FogExp2( 0xefd1b5, 0.0000025 );
+        scene = new Physijs.Scene({ fixedTimeStep: 1 / 120 });
+        scene.setGravity(new THREE.Vector3( 0, -10, 0 ));
+
+        scene.addEventListener(
+        'update',
+        function() {
+            scene.simulate( undefined, 2 );
+        });
+
         scene.fog = new THREE.FogExp2( 0xe8e5f1, 0.005 );
 
         renderer.setClearColor( scene.fog.color, 1 );
@@ -81,7 +121,7 @@
         // - Orbit Camera Controls - //
         cameraControls = new THREE.OrbitControls( camera, renderer.domElement );
         cameraControls.target.set( 0, 50, 0 );
-        cameraControls.maxDistance = 250;
+        cameraControls.maxDistance = 200;
         cameraControls.minDistance = 10;
         cameraControls.update();
 
@@ -91,11 +131,24 @@
         // - Update the Camera - //
         var container = document.getElementById( 'container' );
         container.appendChild( renderer.domElement );
-
       }
 
-      // Generate new minor gems
+      // Returns a random number between min and max
+      function getRandomArbitrary(min, max) {
+        return Math.random() * (max - min) + min;
+      }
 
+      function generateNewCrystal() {
+
+        var tinyGeometry = new THREE.SphereGeometry( getRandomArbitrary(5,1), 5, 3 );
+        tinyGeometry.mergeVertices();
+        var tinyMaterial = new THREE.MeshPhongMaterial( { ambient: 0xC0C0C0, color: 0xFF8EE3, specular: 0xffffff, metal: true, fog: true, shininess: 200, shading: THREE.FlatShading, transparent: false, reflectivity: 30 } );
+        var tinyPolyhedron = new Physijs.SphereMesh(tinyGeometry, tinyMaterial, getRandomArbitrary(0, 5),
+            { restitution: Math.random() * 1.5 });
+        tinyPolyhedron.position.set(getRandomArbitrary(120, -120),getRandomArbitrary(130, 0),getRandomArbitrary(120, -120));
+        scene.add(tinyPolyhedron);
+
+      }
 
       // Generate an object when major gem is clicked
       function generateObjects(event) {
@@ -111,7 +164,10 @@
         if (intersects.length === 1) {
           intersects[ 0 ].object.material.ambient.setHex( Math.random() * 0xffffff );
         }
-
+        // Generate a tiny new crystal
+        for (var i = 0; i <= 20; i++) {
+          generateNewCrystal();
+        }
       }
 
       function fillScene() {
@@ -138,13 +194,6 @@
         var bumpMapTexture = THREE.ImageUtils.loadTexture( 'donutTex.jpg' );
         bumpMapTexture.wrapS = bumpMapTexture.wrapT = THREE.RepeatWrapping;
         bumpMapTexture.repeat.set( 5, 5 );
-
-
-        //mapTexture.repeat.set( 2, 2 );
-
-        // 0xDAA1E5 light pink
-        // B6AFE3 // light purp pink
-        // FF8EE3 hot pink
 
         //-- ** Add Glamour Objects Here ** --//
         // - Walls - //
@@ -176,8 +225,7 @@
         planeLeft.rotateY( Math.PI / 2 );
         scene.add( planeLeft );
 
-
-         // 0xDAA1E5 light pink
+        // 0xDAA1E5 light pink
         // B6AFE3 // light purp pink
         // FF8EE3 hot pink
 
@@ -198,7 +246,7 @@
 
         var geometry = new THREE.SphereGeometry( 20, 5, 3 );
         geometry.mergeVertices();
-        var material = new THREE.MeshPhongMaterial( { ambient: 0xFF70A5, color: 0xFF8EE3, specular: 0xffffff, bumpMap: mapTexture, fog: true, shininess: 50, shading: THREE.FlatShading, transparent: false, reflectivity: 10 } )
+        var material = new THREE.MeshPhongMaterial( { ambient: new THREE.Color().setHex( Math.random() * 0xffffff ), color: 0xFF8EE3, specular: 0xffffff, bumpMap: mapTexture, fog: true, shininess: 50, shading: THREE.FlatShading, transparent: false, reflectivity: 10 } )
         polyhedron = new THREE.Mesh( geometry, material );
         polyhedron.position.set(0,0,0);
         scene.add(polyhedron);
@@ -209,6 +257,33 @@
 
         // add the sphere to the scene
         scene.add(polyhedron);
+        group.add(polyhedron);
+
+        // create custom material from the shader code above
+        // that is within specially labeled script tags
+        var customMaterial = new THREE.ShaderMaterial( 
+        {
+          uniforms:
+          {
+            "c":   { type: "f", value: 1.0 },
+            "p":   { type: "f", value: 1.4 },
+            glowColor: { type: "c", value: new THREE.Color(0xffd500) },
+            viewVector: { type: "v3", value: camera.position }
+          },
+          vertexShader:   document.getElementById( 'vertexShader'   ).textContent,
+          fragmentShader: document.getElementById( 'fragmentShader' ).textContent,
+          side: THREE.FrontSide,
+          blending: THREE.AdditiveBlending,
+          transparent: true
+        }   );
+
+        this.moonGlow = new THREE.Mesh( geometry.clone(), customMaterial.clone() );
+        moonGlow.position.x = polyhedron.position.x;
+        moonGlow.position.y = polyhedron.position.y;
+        moonGlow.position.z = polyhedron.position.z;
+        moonGlow.scale.multiplyScalar(1.33);
+        scene.add( moonGlow );
+        group.add(moonGlow);
 
 
         var imagePrefix = "textures/skybox/bluefreeze_";
@@ -237,14 +312,12 @@
         pointLight.position.set( 0, 0, 0 );
         scene.add( pointLight );
 
+        scene.add(group);
       }
 
       function render() {
-        // render (update) the mirrors
         groundMirror.renderWithMirror( verticalMirror );
         verticalMirror.renderWithMirror( groundMirror );
-
-        //scene.fog.color.setHSL( 0.45, 1, 0xfafafa );
 
         renderer.setClearColor( scene.fog.color, 1 );
 
@@ -253,7 +326,6 @@
 
       function update() {
         requestAnimationFrame( update );
-
         var timer = Date.now() * 0.01;
 
         var lightVal = 0, time = Date.now() * 0.001;
@@ -275,10 +347,19 @@
         /*--- render animation --- */
         polyhedron.rotation.x+=2/200;
         polyhedron.rotation.y+=2/200;
+        moonGlow.rotation.x+=2/200;
+        moonGlow.rotation.y+=2/200;
+
+        var axis = new THREE.Vector3(0.15,0,0.005);
+        var increment = 0;
+
+        increment += 9/100;
+        group.rotateOnAxis(axis,increment);
 
         cameraControls.update();
 
         render();
+        scene.simulate();
       }
 
       init();
