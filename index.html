@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <title>three.js webgl - mirror</title>
+    <title>Gem Minor</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
     <style>
@@ -31,34 +31,13 @@
   <body>
 
     <div id="container"></div>
-    <div id="info"><a href="http://threejs.org" target="_blank"></a>
+    <div id="info"><a href="http://threejs.org" target="_blank">gem minor</a>
     </div>
 
     <script src="lib/three.js"></script>
     <script src="lib/js/Mirror.js"></script>
     <script src="lib/js/WaterShader.js"></script>
     <script src="lib/js/controls/OrbitControls.js"></script>
-
-
-    <script type="application/x-glsl" id="sky-vertex">
-      varying vec2 vUV;
-
-      void main() {
-        vUV = uv;
-        vec4 pos = vec4(position, 1.0);
-        gl_Position = projectionMatrix * modelViewMatrix * pos;
-      }
-      </script>
-
-      <script type="application/x-glsl" id="sky-fragment">
-      uniform sampler2D texture;
-      varying vec2 vUV;
-
-      void main() {
-        vec4 sample = texture2D(texture, vUV);
-        gl_FragColor = vec4(sample.xyz, sample.w);
-      }
-    </script>
 
     <script>
       var WIDTH = window.innerWidth;
@@ -68,7 +47,7 @@
       var ASPECT = WIDTH / HEIGHT;
 
       var NEAR = 1;
-      var FAR = 500;
+      var FAR = 600;
 
       var camera, scene, renderer;
 
@@ -90,7 +69,8 @@
 
         // - Scene - //
         scene = new THREE.Scene();
-        scene.fog = new THREE.Fog( 0x111111, 2000, 4000 );
+        // scene.fog = new THREE.FogExp2( 0xefd1b5, 0.0000025 );
+        scene.fog = new THREE.FogExp2( 0xe8e5f1, 0.005 );
 
         renderer.setClearColor( scene.fog.color, 1 );
         
@@ -101,13 +81,36 @@
         // - Orbit Camera Controls - //
         cameraControls = new THREE.OrbitControls( camera, renderer.domElement );
         cameraControls.target.set( 0, 50, 0 );
-        cameraControls.maxDistance = 200;
+        cameraControls.maxDistance = 250;
         cameraControls.minDistance = 10;
         cameraControls.update();
+
+        raycaster = new THREE.Raycaster();
+        document.addEventListener( 'mousedown', generateObjects, false );
 
         // - Update the Camera - //
         var container = document.getElementById( 'container' );
         container.appendChild( renderer.domElement );
+
+      }
+
+      // Generate new minor gems
+
+
+      // Generate an object when major gem is clicked
+      function generateObjects(event) {
+        event.preventDefault();
+
+        var vector = new THREE.Vector3();
+        vector.set( ( event.clientX / window.innerWidth ) * 2 - 1, - ( event.clientY / window.innerHeight ) * 2 + 1, 0.5 );
+        vector.unproject( camera );
+
+        raycaster.ray.set( camera.position, vector.sub( camera.position ).normalize() );
+
+        var intersects = raycaster.intersectObject( polyhedron );
+        if (intersects.length === 1) {
+          intersects[ 0 ].object.material.ambient.setHex( Math.random() * 0xffffff );
+        }
 
       }
 
@@ -195,7 +198,7 @@
 
         var geometry = new THREE.SphereGeometry( 20, 5, 3 );
         geometry.mergeVertices();
-        var material = new THREE.MeshPhongMaterial( { ambient: 0xFF70A5, color: 0xFF8EE3, specular: 0xffffff, bumpMap: mapTexture, fog: true, shininess: 50, shading: THREE.FlatShading, transparent: true, opacity: .8, reflectivity: 10 } )
+        var material = new THREE.MeshPhongMaterial( { ambient: 0xFF70A5, color: 0xFF8EE3, specular: 0xffffff, bumpMap: mapTexture, fog: true, shininess: 50, shading: THREE.FlatShading, transparent: false, reflectivity: 10 } )
         polyhedron = new THREE.Mesh( geometry, material );
         polyhedron.position.set(0,0,0);
         scene.add(polyhedron);
@@ -206,6 +209,23 @@
 
         // add the sphere to the scene
         scene.add(polyhedron);
+
+
+        var imagePrefix = "textures/skybox/bluefreeze_";
+        var directions  = ["lf", "rt", "up", "dn", "ft", "bk"];
+        // var directions  = ["xpos", "xneg", "ypos", "yneg", "zpos", "zneg"];
+        var imageSuffix = ".png";
+        var skyGeometry = new THREE.BoxGeometry( 512, 512, 512 );
+
+        var materialArray = [];
+        for (var i = 0; i < 6; i++)
+          materialArray.push( new THREE.MeshBasicMaterial({
+            map: THREE.ImageUtils.loadTexture( imagePrefix + directions[i] + imageSuffix ),
+            side: THREE.BackSide
+          }));
+        var skyMaterial = new THREE.MeshFaceMaterial( materialArray );
+        var skyBox = new THREE.Mesh( skyGeometry, skyMaterial );
+        scene.add( skyBox );
 
         scene.add( new THREE.AmbientLight( 0xa6a6a6 ) );
 
@@ -224,7 +244,7 @@
         groundMirror.renderWithMirror( verticalMirror );
         verticalMirror.renderWithMirror( groundMirror );
 
-        scene.fog.color.setHSL( 0.1, 1, 0xfafafa );
+        //scene.fog.color.setHSL( 0.45, 1, 0xfafafa );
 
         renderer.setClearColor( scene.fog.color, 1 );
 
