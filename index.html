@@ -31,7 +31,7 @@
   <body>
 
     <div id="container"></div>
-    <div id="info"><a href="http://threejs.org" target="_blank"></a>
+    <div id="info"><a href="http://threejs.org" target="_blank">helloww</a>
     </div>
 
     <script src="lib/three.js"></script>
@@ -85,14 +85,17 @@
 
       function init() {
         // - Renderer - //
-        renderer = new THREE.WebGLRenderer({ alpha: true });
+        renderer = new THREE.WebGLRenderer({antialias:true, alpha:true});
         renderer.setSize( WIDTH, HEIGHT );
 
         // - Scene - //
         scene = new THREE.Scene();
-        scene.fog = new THREE.Fog( 0x111111, 2000, 4000 );
 
-        renderer.setClearColor( scene.fog.color, 1 );
+        scene.fog = new THREE.FogExp2( 0xefd1b5, 0.0008 );
+        // scene.fog = new THREE.FogExp2( 0x111111, 0.000002 );
+        // scene.fog = new THREE.Fog( 0x111111, 2000, 4000 );
+
+        // renderer.setClearColor( 0xefd1b5, 1 );
         
         // - Camera - //
         camera = new THREE.PerspectiveCamera( VIEW_ANGLE, ASPECT, NEAR, FAR);
@@ -132,7 +135,7 @@
         verticalMirrorMesh.position.z = -45;
         scene.add( verticalMirrorMesh );
 
-        var bumpMapTexture = THREE.ImageUtils.loadTexture( 'donutTex.jpg' );
+        var bumpMapTexture = THREE.ImageUtils.loadTexture( 'textures/donutTex.jpg' );
         bumpMapTexture.wrapS = bumpMapTexture.wrapT = THREE.RepeatWrapping;
         bumpMapTexture.repeat.set( 5, 5 );
 
@@ -188,7 +191,7 @@
         cylinder.rotateZ( Math.PI / 1.09 );
         scene.add( cylinder );
 
-        var mapTexture = new THREE.ImageUtils.loadTexture('crystal8.jpg', new THREE.CubeReflectionMapping() );
+        var mapTexture = new THREE.ImageUtils.loadTexture('textures/crystal11.jpg', new THREE.CubeReflectionMapping() );
         mapTexture.wrapS = mapTexture.wrapT = THREE.RepeatWrapping;
         mapTexture.repeat.set( 4, 4 );
 
@@ -217,6 +220,24 @@
         pointLight.position.set( 0, 0, 0 );
         scene.add( pointLight );
 
+        // - Skybox - //
+        var imagePrefix = "textures/skybox/";
+        var directions  = ["xpos", "xneg", "ypos", "yneg", "zpos", "zneg"];
+        // var directions  = ["xpos", "xneg", "ypos", "yneg", "zpos", "zneg"];
+        var imageSuffix = ".png";
+        var skyGeometry = new THREE.BoxGeometry( 350, 350, 350 );
+
+        var materialArray = [];
+        for (var i = 0; i < 6; i++)
+          materialArray.push( new THREE.MeshBasicMaterial({
+            map: THREE.ImageUtils.loadTexture( imagePrefix + directions[i] + imageSuffix ),
+            side: THREE.BackSide
+          }));
+        var skyMaterial = new THREE.MeshFaceMaterial( materialArray );
+        var skyBox = new THREE.Mesh( skyGeometry, skyMaterial );
+        skyBox.flipSided = true;
+        scene.add( skyBox );
+
       }
 
       function render() {
@@ -224,9 +245,9 @@
         groundMirror.renderWithMirror( verticalMirror );
         verticalMirror.renderWithMirror( groundMirror );
 
-        scene.fog.color.setHSL( 0.1, 1, 0xfafafa );
+        scene.fog.color.setHSL( 0.001, 1, 0xfafafa );
 
-        renderer.setClearColor( scene.fog.color, 1 );
+        //renderer.setClearColor( 0xffffff, 1 );
 
         renderer.render(scene, camera);
       }
