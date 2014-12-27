@@ -180,10 +180,10 @@
         var intersects = raycaster.intersectObject( polyhedron );
         if (intersects.length === 1) {
           intersects[ 0 ].object.material.ambient.setHex( Math.random() * 0xffffff );
-        }
-        // Generate a tiny new crystal
-        for (var i = 0; i <= 20; i++) {
-          generateNewCrystal();
+          // Generate a tiny new crystal
+          for (var i = 0; i <= 20; i++) {
+            generateNewCrystal();
+          }
         }
       }
 
