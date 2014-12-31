@@ -47,7 +47,7 @@
   </head>
   <body>
 
-    <div id="container"><div id="info">hello</div></div>
+    <div id="container"><div id="info"></div></div>
 
     <script type="text/javascript" src="lib/three.js"></script>
     <script type="text/javascript" src="lib/physi.js"></script>
@@ -82,8 +82,6 @@
     }
     </script>
     <!-- ----------------------------------------------------------- -->
-
-
     <script>
       Physijs.scripts.worker = 'lib/physijs_worker.js';
       Physijs.scripts.ammo = 'ammo.js';
@@ -103,13 +101,17 @@
 
       // --- Mirrors vars --- //
       var verticalMirror, groundMirror;
-      var sphereGroup, smallSphere;
 
       var clock = new THREE.Clock();
       var lightVal = 0, lightDir = 1;
 
       var polyhedron;
       var group = new THREE.Group();
+
+       // Returns a random number between min and max
+      function getRandomArbitrary(min, max) {
+        return Math.random() * (max - min) + min;
+      }
 
       function init() {
         // - Renderer - //
@@ -147,11 +149,6 @@
         // - Update the Camera - //
         var container = document.getElementById( 'container' );
         container.appendChild( renderer.domElement );
-      }
-
-      // Returns a random number between min and max
-      function getRandomArbitrary(min, max) {
-        return Math.random() * (max - min) + min;
       }
 
       function generateNewCrystal() {
