@@ -13,7 +13,7 @@
     <!-- for Facebook -->
     <meta property="og:title" content="Shape Minor" />
     <meta property="og:type" content="webgl" />
-    <meta property="og:image" content="glamour-gems.png" />
+    <meta property="og:image" content="/glamour-gems.png" />
     <meta property="og:description" content="webgl rendering" />
 
     <!-- for Twitter -->
@@ -47,13 +47,12 @@
   </head>
   <body>
 
-    <div id="container"></div>
+    <div id="container"><div id="info">hello</div></div>
 
-    <script src="lib/three.js"></script>
-    <script src="lib/physi.js"></script>
-    <script src="lib/js/Mirror.js"></script>
-    <script src="lib/js/WaterShader.js"></script>
-    <script src="lib/js/controls/OrbitControls.js"></script>
+    <script type="text/javascript" src="lib/three.js"></script>
+    <script type="text/javascript" src="lib/physi.js"></script>
+    <script type="text/javascript" src="lib/js/Mirror.js"></script>
+    <script type="text/javascript" src="lib/js/controls/OrbitControls.js"></script>
 
 
     <!-- ---------------- Custom Shader Code ------------------------ -->
@@ -79,7 +78,7 @@
     void main()
     {
       vec3 glow = glowColor * intensity;
-        gl_FragColor = vec4( glow, 1.0 );
+        gl_FragColor = vec4( glow, .25 );
     }
     </script>
     <!-- ----------------------------------------------------------- -->
@@ -119,7 +118,7 @@
 
         // - Scene - //
         scene = new Physijs.Scene({ fixedTimeStep: 1 / 120 });
-        scene.setGravity(new THREE.Vector3( 0, -10, 0 ));
+        scene.setGravity(new THREE.Vector3( 0.0001, -10, 0 ));
 
         scene.addEventListener(
         'update',
@@ -157,13 +156,32 @@
 
       function generateNewCrystal() {
 
-        var tinyGeometry = new THREE.SphereGeometry( getRandomArbitrary(5,1), 5, 3 );
+        var tinyGeometry = new THREE.SphereGeometry( 1, 5, 3 );
         tinyGeometry.mergeVertices();
-        var tinyMaterial = new THREE.MeshPhongMaterial( { ambient: 0xC0C0C0, color: 0xFF8EE3, specular: 0xffffff, metal: true, fog: true, shininess: 200, shading: THREE.FlatShading, transparent: false, reflectivity: 30 } );
-        var tinyPolyhedron = new Physijs.SphereMesh(tinyGeometry, tinyMaterial, getRandomArbitrary(0, 5),
-            { restitution: Math.random() * 1.5 });
+        var tinyMaterial = Physijs.createMaterial(
+          new THREE.MeshPhongMaterial({
+            ambient: 0xffffff,
+            color: 0xcccccc,
+            specular: 0xffffff,
+            metal: true,
+            fog: true,
+            shininess: 200,
+            shading: THREE.FlatShading,
+            reflectivity: 30,
+            transparent: true,
+            opacity: .8
+          }),
+          -.1, // high friction
+          1 // medium restitution /bouciness
+        );
+        var tinyPolyhedron = new Physijs.SphereMesh(
+          tinyGeometry,
+          tinyMaterial,
+          1
+        );
         tinyPolyhedron.position.set(getRandomArbitrary(120, -120),getRandomArbitrary(130, 0),getRandomArbitrary(120, -120));
         scene.add(tinyPolyhedron);
+        // new TWEEN.Tween(tinyPolyhedron.material).to({opacity: 1}, 500).start();
 
       }
 
@@ -181,7 +199,7 @@
         if (intersects.length === 1) {
           intersects[ 0 ].object.material.ambient.setHex( Math.random() * 0xffffff );
           // Generate a tiny new crystal
-          for (var i = 0; i <= 20; i++) {
+          for (var i = 0; i <= 30; i++) {
             generateNewCrystal();
           }
         }
@@ -192,9 +210,19 @@
         var planeGeo = new THREE.PlaneBufferGeometry( 100.1, 100.1 );
 
         // - Ground Mirror Texture - //
-        groundMirror = new THREE.Mirror( renderer, camera, { clipBias: 0.003, textureWidth: WIDTH, textureHeight: HEIGHT, color: 0x777777 } );
+        groundMirror = new THREE.Mirror( renderer, camera, { clipBias: 0.003, textureWidth: WIDTH, textureHeight: HEIGHT, color: 0x777777, fog: true } );
+        groundMirrorMaterial = Physijs.createMaterial(
+          groundMirror.material,
+          .8, // high friction
+          .8 // low restitution
+        );
         // - Add mirror texture to physical plane - //
-        var mirrorMesh = new THREE.Mesh( planeGeo, groundMirror.material );
+        var mirrorMesh = new Physijs.BoxMesh  (
+          planeGeo,
+          groundMirrorMaterial,
+          0 // Mass
+        );
+        // var mirrorMesh = new THREE.Mesh( planeGeo, groundMirror.material );
         mirrorMesh.add( groundMirror );
         mirrorMesh.rotateX( - Math.PI / 2 );
         scene.add( mirrorMesh );
@@ -202,10 +230,10 @@
         // - Vertical Mirror Texture - //
         verticalMirror = new THREE.Mirror( renderer, camera, { clipBias: 0.003, textureWidth: WIDTH, textureHeight: HEIGHT, color:0x889999, fog: true } );
         // - Add mirror texture to physical plane - //
-        var verticalMirrorMesh = new THREE.Mesh( new THREE.PlaneBufferGeometry( 60, 60 ), verticalMirror.material );
+        var verticalMirrorMesh = new THREE.Mesh( planeGeo, verticalMirror.material );
         verticalMirrorMesh.add( verticalMirror );
-        verticalMirrorMesh.position.y = 35;
-        verticalMirrorMesh.position.z = -45;
+        verticalMirrorMesh.position.y = 50;
+        verticalMirrorMesh.position.z = -50;
         scene.add( verticalMirrorMesh );
 
         var bumpMapTexture = THREE.ImageUtils.loadTexture( 'donutTex.jpg' );
@@ -218,11 +246,6 @@
         planeTop.position.y = 100;
         planeTop.rotateX( Math.PI / 2 );
         scene.add( planeTop );
-        
-        var planeBack = new THREE.Mesh( planeGeo, new THREE.MeshPhongMaterial( { color: 0xB6AFE3, fog: true, bumpMap: bumpMapTexture, bumpScale: 0.3  } ) );
-        planeBack.position.z = -50;
-        planeBack.position.y = 50;
-        scene.add( planeBack );
         
         var planeFront = new THREE.Mesh( planeGeo, new THREE.MeshPhongMaterial( { color: 0xDAA1E5, fog: true, bumpMap: bumpMapTexture, bumpScale: 0.3  } ) );
         planeFront.position.z = 50;
@@ -273,18 +296,18 @@
         polyhedron.position.set(-28, 30, -20);
 
         // add the sphere to the scene
-        scene.add(polyhedron);
         group.add(polyhedron);
 
         // create custom material from the shader code above
         // that is within specially labeled script tags
+        var sphere = new THREE.SphereGeometry( 20, 0, 0 );
         var customMaterial = new THREE.ShaderMaterial( 
         {
           uniforms:
           {
             "c":   { type: "f", value: 1.0 },
-            "p":   { type: "f", value: 1.4 },
-            glowColor: { type: "c", value: new THREE.Color(0xffd500) },
+            "p":   { type: "f", value: 2.0 },
+            glowColor: { type: "c", value: new THREE.Color(0xffd089) },
             viewVector: { type: "v3", value: camera.position }
           },
           vertexShader:   document.getElementById( 'vertexShader'   ).textContent,
@@ -294,13 +317,12 @@
           transparent: true
         }   );
 
-        this.moonGlow = new THREE.Mesh( geometry.clone(), customMaterial.clone() );
+        this.moonGlow = new THREE.Mesh( sphere, customMaterial.clone() );
         moonGlow.position.x = polyhedron.position.x;
         moonGlow.position.y = polyhedron.position.y;
         moonGlow.position.z = polyhedron.position.z;
         moonGlow.scale.multiplyScalar(1.33);
-        scene.add( moonGlow );
-        group.add(moonGlow);
+        group.add( moonGlow );
 
 
         var imagePrefix = "textures/skybox/bluefreeze_";
