@@ -108,7 +108,7 @@
       var polyhedron;
       var group = new THREE.Group();
 
-       // Returns a random number between min and max
+      // Returns a random number between min and max
       function getRandomArbitrary(min, max) {
         return Math.random() * (max - min) + min;
       }
@@ -134,12 +134,12 @@
         
         // - Camera - //
         camera = new THREE.PerspectiveCamera( VIEW_ANGLE, ASPECT, NEAR, FAR);
-        camera.position.set( 0, 45, 200 );
+        camera.position.set( 400, 300, 300 );
 
         // - Orbit Camera Controls - //
         cameraControls = new THREE.OrbitControls( camera, renderer.domElement );
         cameraControls.target.set( 0, 50, 0 );
-        cameraControls.maxDistance = 200;
+        cameraControls.maxDistance = 100;
         cameraControls.minDistance = 10;
         cameraControls.update();
 
@@ -153,13 +153,13 @@
 
       function generateNewCrystal() {
 
-        var tinyGeometry = new THREE.SphereGeometry( 1, 5, 3 );
-        tinyGeometry.mergeVertices();
+        var tinyGeometry = new THREE.IcosahedronGeometry( getRandomArbitrary(2, 2.5), 0 );
+
         var tinyMaterial = Physijs.createMaterial(
           new THREE.MeshPhongMaterial({
-            ambient: 0xffffff,
+            ambient: 0x191919,
             color: 0xcccccc,
-            specular: 0xffffff,
+            specular: 0xcccccc,
             metal: true,
             fog: true,
             shininess: 200,
@@ -176,10 +176,8 @@
           tinyMaterial,
           1
         );
-        tinyPolyhedron.position.set(getRandomArbitrary(120, -120),getRandomArbitrary(130, 0),getRandomArbitrary(120, -120));
+        tinyPolyhedron.position.set(getRandomArbitrary(100, 0),getRandomArbitrary(100, 200),getRandomArbitrary(100, 0));
         scene.add(tinyPolyhedron);
-        // new TWEEN.Tween(tinyPolyhedron.material).to({opacity: 1}, 500).start();
-
       }
 
       // Generate an object when major gem is clicked
@@ -196,7 +194,7 @@
         if (intersects.length === 1) {
           intersects[ 0 ].object.material.ambient.setHex( Math.random() * 0xffffff );
           // Generate a tiny new crystal
-          for (var i = 0; i <= 30; i++) {
+          for (var i = 0; i <= 5; i++) {
             generateNewCrystal();
           }
         }
@@ -233,7 +231,7 @@
         verticalMirrorMesh.position.z = -50;
         scene.add( verticalMirrorMesh );
 
-        var bumpMapTexture = THREE.ImageUtils.loadTexture( 'donutTex.jpg' );
+        var bumpMapTexture = THREE.ImageUtils.loadTexture( 'textures/donutTex.jpg' );
         bumpMapTexture.wrapS = bumpMapTexture.wrapT = THREE.RepeatWrapping;
         bumpMapTexture.repeat.set( 5, 5 );
 
@@ -268,21 +266,31 @@
 
         var cylinder = new THREE.Mesh(
           // radiusAtTop, radiusAtBottom, height, segmentsAroundRadius, segmentsAlongHeight,
-          new THREE.CylinderGeometry( 3, 3, 103, 10, 4 ),
-          new THREE.MeshPhongMaterial( { ambient: 0xB6AFE3, color: 0xB6AFE3, specular: 0xB6AFE3, fog: true} )
+          new THREE.CylinderGeometry( 2, 2, 103, 10, 4 ),
+          new THREE.MeshPhongMaterial( { ambient: 0x8b84d6, color: 0xB6AFE3, specular: 0xB6AFE3, fog: true} )
         );
         cylinder.position.set(19, 50, -36);
         cylinder.rotateY( Math.PI / 3.75 );
         cylinder.rotateZ( Math.PI / 1.09 );
         scene.add( cylinder );
 
-        var mapTexture = new THREE.ImageUtils.loadTexture('crystal8.jpg', new THREE.CubeReflectionMapping() );
+        var cylinderSide = new THREE.Mesh(
+          // radiusAtTop, radiusAtBottom, height, segmentsAroundRadius, segmentsAlongHeight,
+          new THREE.CylinderGeometry( 2, 2, 100, 10, 4 ),
+          new THREE.MeshPhongMaterial( { ambient: 0x8b84d6, color: 0xB6AFE3, specular: 0xB6AFE3, fog: true} )
+        );
+        cylinderSide.position.set(-44, 50, 35);
+        cylinderSide.rotateY( Math.PI/ -1.40 );
+        cylinderSide.rotateZ( Math.PI / 1.05 );
+        scene.add( cylinderSide );
+
+        var mapTexture = new THREE.ImageUtils.loadTexture('crystal9.jpg', new THREE.CubeReflectionMapping() );
         mapTexture.wrapS = mapTexture.wrapT = THREE.RepeatWrapping;
         mapTexture.repeat.set( 4, 4 );
 
 
-        var geometry = new THREE.SphereGeometry( 20, 5, 3 );
-        geometry.mergeVertices();
+        var geometry = new THREE.IcosahedronGeometry( 20, 0 );
+        // geometry.mergeVertices();
         var material = new THREE.MeshPhongMaterial( { ambient: new THREE.Color().setHex( Math.random() * 0xffffff ), color: 0xFF8EE3, specular: 0xffffff, bumpMap: mapTexture, fog: true, shininess: 50, shading: THREE.FlatShading, transparent: false, reflectivity: 10 } )
         polyhedron = new THREE.Mesh( geometry, material );
         polyhedron.position.set(0,0,0);
@@ -357,11 +365,6 @@
 
         renderer.setClearColor( scene.fog.color, 1 );
 
-        renderer.render(scene, camera);
-      }
-
-      function update() {
-        requestAnimationFrame( update );
         var timer = Date.now() * 0.01;
 
         var lightVal = 0, time = Date.now() * 0.001;
@@ -375,9 +378,15 @@
 
         var valNorm = ( lightVal - fLow ) / ( fHigh - fLow );
 
-
         directionalLight.intensity = THREE.Math.mapLinear( valNorm, 0, 1, 0.1, 1.15 );
         pointLight.intensity = THREE.Math.mapLinear( valNorm, 0, 1, 0.9, 1.5 );
+
+        renderer.render(scene, camera);
+      }
+
+      function update() {
+        requestAnimationFrame( update );
+
 
         /*--- end render changes to lighting --- */
         /*--- render animation --- */
