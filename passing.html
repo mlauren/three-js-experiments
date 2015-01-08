@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Shape Minor</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <!-- for Google -->
+    <meta name="description" content="" />
+    <meta name="keywords" content="" />
+
+    <meta name="author" content="M Lauren Maxwell" />
+
+    <!-- for Facebook -->
+    <meta property="og:title" content="Passing" />
+    <meta property="og:type" content="webgl" />
+    <meta property="og:image" content="" />
+    <meta property="og:description" content="landscape rendering" />
+
+    <!-- for Twitter -->
+    <meta name="twitter:card" content="webgl" />
+    <meta name="twitter:title" content="Shape Minor" />
+    <meta name="twitter:description" content="rendering" />
+    <meta name="twitter:image" content="glamour-gems.png" />
+    <style>
+      body {
+        color: #888888;
+        font-family:Monospace;
+        font-size:13px;
+
+        background-color: #000;
+        margin: 0px;
+        overflow: hidden;
+      }
+
+      #info {
+        position: absolute;
+        top: 0px;
+        width: 200px;
+        left: calc(50% - 100px);
+        text-align: center;
+      }
+
+      a {
+        color: #00f;
+      }
+    </style>
+  </head>
+  <body>
+
+    <div id="container"><div id="info">hello</div></div>
+
+    <script type="text/javascript" src="lib/three.js"></script>
+    <script type="text/javascript" src="lib/physi.js"></script>
+    <script type="text/javascript" src="lib/js/Mirror.js"></script>
+    <script type="text/javascript" src="lib/js/controls/OrbitControls.js"></script>
+
+
+    <!-- ---------------- Custom Shader Code ------------------------ -->
+    <script id="vertexShader" type="x-shader/x-vertex">
+    uniform vec3 viewVector;
+    uniform float c;
+    uniform float p;
+    varying float intensity;
+    void main()
+    {
+      vec3 vNormal = normalize( normalMatrix * normal );
+      vec3 vNormel = normalize( normalMatrix * viewVector );
+      intensity = pow( c - dot(vNormal, vNormel), p );
+
+      gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+    }
+    </script>
+
+    <!-- fragment shader a.k.a. pixel shader -->
+    <script id="fragmentShader" type="x-shader/x-vertex">
+    uniform vec3 glowColor;
+    varying float intensity;
+    void main()
+    {
+      vec3 glow = glowColor * intensity;
+        gl_FragColor = vec4( glow, .25 );
+    }
+    </script>
+    <!-- ----------------------------------------------------------- -->
+    <script>
+      Physijs.scripts.worker = 'lib/physijs_worker.js';
+      Physijs.scripts.ammo = 'ammo.js';
+
+      var WIDTH = window.innerWidth;
+      var HEIGHT = window.innerHeight;
+
+      var VIEW_ANGLE = 50;
+      var ASPECT = WIDTH / HEIGHT;
+
+      var NEAR = 1;
+      var FAR = 600;
+
+      var camera, scene, renderer;
+
+      var cameraControls;
+
+      var raycaster;
+
+      // --- Mirrors vars --- //
+      var verticalMirror, groundMirror;
+
+      var clock = new THREE.Clock();
+      var lightVal = 0, lightDir = 1;
+
+      var polyhedron;
+
+      // Returns a random number between min and max
+      function getRandomArbitrary(min, max) {
+        return Math.random() * (max - min) + min;
+      }
+
+      function init() {
+        // - Renderer - //
+        renderer = new THREE.WebGLRenderer({ alpha: true });
+        renderer.setSize( WIDTH, HEIGHT );
+
+        // - Scene - //
+        scene = new Physijs.Scene({ fixedTimeStep: 1 / 120 });
+        scene.setGravity(new THREE.Vector3( 0.0001, -10, 0 ));
+
+        scene.addEventListener(
+        'update',
+        function() {
+            scene.simulate( undefined, 2 );
+        });
+
+        scene.fog = new THREE.FogExp2( 0xE8FED3, 0.003 );
+
+        renderer.setClearColor( scene.fog.color, 1 );
+        
+        // - Camera - //
+        camera = new THREE.PerspectiveCamera( VIEW_ANGLE, ASPECT, NEAR, FAR);
+        camera.position.set( 400, 300, 300 );
+
+        // - Orbit Camera Controls - //
+        cameraControls = new THREE.OrbitControls( camera, renderer.domElement );
+        cameraControls.target.set( 0, 150, 0 );
+        cameraControls.maxDistance = 100;
+        cameraControls.minDistance = 10;
+        cameraControls.update();
+
+        raycaster = new THREE.Raycaster();
+
+        // - Update the Camera - //
+        var container = document.getElementById( 'container' );
+        container.appendChild( renderer.domElement );
+      }
+
+      function fillScene() {
+
+        var planeGeo = new THREE.PlaneBufferGeometry( 2000, 2000 );
+
+        var bumpMapTexture = THREE.ImageUtils.loadTexture( 'textures/donutTex.jpg' );
+        bumpMapTexture.wrapS = bumpMapTexture.wrapT = THREE.RepeatWrapping;
+        bumpMapTexture.repeat.set( 5, 5 );
+
+        var planeBottom = new THREE.Mesh( planeGeo, new THREE.MeshPhongMaterial( { ambient: 0xB0C77B, color: 0xE8FED3, specular: 0xB0C77B, fog: true, bumpMap: bumpMapTexture, bumpScale: 0.3  } ) );
+        // planeRight.rotateY( Math.PI);
+        planeBottom.rotateX( - Math.PI / 2 );
+        scene.add( planeBottom );
+
+
+        scene.add( new THREE.AmbientLight( 0x7fbac7 ) );
+
+        directionalLight = new THREE.DirectionalLight( 0x7fbac7, 1.5 );
+        directionalLight.position.set( 500, 1.5, 10 );
+        scene.add( directionalLight );
+
+        directionalLight1 = new THREE.DirectionalLight( 0x7fbac7, 1.5 );
+        directionalLight1.position.set( 2000, 1.5, 10 );
+        //scene.add( directionalLight1 );
+
+        pointLight = new THREE.PointLight( 0x7fbac7, 1.5, 0 );
+        pointLight.position.set( 500, 0, 4000 );
+        scene.add( pointLight );
+
+
+
+      }
+
+      function render() {
+        // Render another mirror with mirror groundMirror.renderWithMirror( );
+
+        var delta = clock.getDelta();
+
+        var time = Date.now() * 0.001;
+
+        var fLow = 0.1, fHigh = 0.9;
+
+        lightVal = THREE.Math.clamp( lightVal + 1 * delta * lightDir, fLow, fHigh );
+
+        var valNorm = ( lightVal - fLow ) / ( fHigh - fLow );
+
+        scene.fog.color.setHSL( 0.1, 0.2, lightVal );
+
+        renderer.setClearColor( scene.fog.color, 1 );
+
+        directionalLight.intensity = THREE.Math.mapLinear( valNorm, 0, 1, 0.5, 1.15 );
+        pointLight.intensity = THREE.Math.mapLinear( valNorm, 0, 1, 0.9, 1.5 );
+
+
+        renderer.render(scene, camera);
+      }
+
+      function update() {
+        requestAnimationFrame( update );
+
+        cameraControls.update();
+
+        render();
+        scene.simulate();
+      }
+
+      init();
+      fillScene();
+      update();
+
+    </script>
+    <div id="container">
+      
+    </div>
+  </body>
