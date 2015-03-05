@@ -176,7 +176,7 @@
           tinyMaterial,
           1
         );
-        tinyPolyhedron.position.set(getRandomArbitrary(100, 0),getRandomArbitrary(100, 200),getRandomArbitrary(100, 0));
+        tinyPolyhedron.position.set(getRandomArbitrary(100, -100),getRandomArbitrary(100, 200),getRandomArbitrary(100, -100));
         scene.add(tinyPolyhedron);
       }
 
@@ -260,10 +260,6 @@
         planeLeft.rotateY( Math.PI / 2 );
         scene.add( planeLeft );
 
-        // 0xDAA1E5 light pink
-        // B6AFE3 // light purp pink
-        // FF8EE3 hot pink
-
         var cylinder = new THREE.Mesh(
           // radiusAtTop, radiusAtBottom, height, segmentsAroundRadius, segmentsAlongHeight,
           new THREE.CylinderGeometry( 2, 2, 103, 10, 4 ),
@@ -284,7 +280,7 @@
         cylinderSide.rotateZ( Math.PI / 1.05 );
         scene.add( cylinderSide );
 
-        var mapTexture = new THREE.ImageUtils.loadTexture('crystal9.jpg', new THREE.CubeReflectionMapping() );
+        var mapTexture = new THREE.ImageUtils.loadTexture('textures/crystal9.jpg', new THREE.CubeReflectionMapping() );
         mapTexture.wrapS = mapTexture.wrapT = THREE.RepeatWrapping;
         mapTexture.repeat.set( 4, 4 );
 

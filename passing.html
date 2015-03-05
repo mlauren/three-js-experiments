@@ -11,10 +11,10 @@
     <meta name="author" content="M Lauren Maxwell" />
 
     <!-- for Facebook -->
-    <meta property="og:title" content="Passing" />
+    <meta property="og:title" content="Shape Minor" />
     <meta property="og:type" content="webgl" />
-    <meta property="og:image" content="" />
-    <meta property="og:description" content="landscape rendering" />
+    <meta property="og:image" content="/glamour-gems.png" />
+    <meta property="og:description" content="webgl rendering" />
 
     <!-- for Twitter -->
     <meta name="twitter:card" content="webgl" />
@@ -56,10 +56,23 @@
     <script type="text/javascript" src="lib/js/Mirror.js"></script>
     <script type="text/javascript" src="lib/js/controls/OrbitControls.js"></script>
 
+    <script src="//connect.soundcloud.com/sdk.js"></script>
+    <script>
+      SC.initialize({
+        client_id: "65b2916d4c04940d628b143a1faf33c8"
+      });
+    </script>
   </body>
   <script>
       Physijs.scripts.worker = 'lib/physijs_worker.js';
       Physijs.scripts.ammo = 'ammo.js';
+
+      var projector = new THREE.Projector(),
+        mouse_vector = new THREE.Vector3(),
+        mouse = { x: 0, y: 0, z: 1 },
+        ray = new THREE.Raycaster( new THREE.Vector3(0,0,0), new THREE.Vector3(0,0,0) ),
+        intersects = [],
+        objects = [];
 
       var WIDTH = window.innerWidth;
       var HEIGHT = window.innerHeight;
@@ -80,6 +93,8 @@
       var clock = new THREE.Clock();
       var lightVal = 0, lightDir = 1;
 
+      var is_playing = false;
+
       // Returns a random number between min and max
       function getRandomArbitrary(min, max)
       {
@@ -88,16 +103,25 @@
 
       function init()
       {
+        window.addEventListener('resize', function() {
+          var WIDTH = window.innerWidth,
+              HEIGHT = window.innerHeight;
+          renderer.setSize(WIDTH, HEIGHT);
+          camera.aspect = WIDTH / HEIGHT;
+          camera.updateProjectionMatrix();
+        });
 
         // - Renderer - //
         renderer = new THREE.WebGLRenderer({ alpha: true });
         renderer.setSize( WIDTH, HEIGHT );
 
+
          // - Scene - //
         scene = new Physijs.Scene({ fixedTimeStep: 1 / 120 });
-        scene.setGravity(new THREE.Vector3( 0.0001, -10, 0 ));
 
-        scene.fog = new THREE.FogExp2( 0xe8e5f1, 0.005 );
+        scene.setGravity(new THREE.Vector3( 0, -200, 0 ));
+
+        scene.fog = new THREE.FogExp2( 0xE5EEF1, 0.005 );
 
         renderer.setClearColor( scene.fog.color, 1 );
         
@@ -111,8 +135,6 @@
         cameraControls.maxDistance = 100;
         cameraControls.minDistance = 10;
         cameraControls.update();
-
-        raycaster = new THREE.Raycaster();
 
         // - Update the Camera - //
         var container = document.getElementById( 'container' );
@@ -129,89 +151,63 @@
         bumpMapTexture.wrapS = bumpMapTexture.wrapT = THREE.RepeatWrapping;
         bumpMapTexture.repeat.set( 5, 5 );
 
-        var planeBottom = new THREE.Mesh( planeGeoGround, new THREE.MeshPhongMaterial( { ambient: 0xB0C77B, color: 0xE8FED3, specular: 0xB0C77B, fog: true, bumpMap: bumpMapTexture, bumpScale: 0.3  } ) );
-        // planeRight.rotateY( Math.PI);
+        var planeBottom = new THREE.Mesh( planeGeoGround, new THREE.MeshPhongMaterial( { ambient: 0xB0C77B, color: 0xE8FED3, specular: 0xB0C77B, fog: true, bumpMap: bumpMapTexture, bumpScale: 0.3, opacity: .7, transparent: true } ) );
+
         planeBottom.rotateX( - Math.PI / 2 );
         scene.add( planeBottom );
 
         var planeGeo = new THREE.PlaneBufferGeometry( 100.1, 100.1 );
 
         // - Vertical Mirror Texture - //
-        verticalMirror = new THREE.Mirror( renderer, camera, { clipBias: 0.003, textureWidth: WIDTH, textureHeight: HEIGHT, color: 0x889999, fog: true } );
-        verticalMirrorMaterial = Physijs.createMaterial(
-          verticalMirror.material,
-          .8, // high friction
-          .8 // low restitution
-        );
-
+        verticalMirror = new THREE.Mirror( renderer, camera, { clipBias: 0.003, textureWidth: WIDTH, textureHeight: HEIGHT, color:0x889999, fog: true } );
         // - Add mirror texture to physical plane - //
-        var mirrorMesh = new Physijs.BoxMesh  (
-          planeGeo,
-          verticalMirrorMaterial,
-          0 // Mass
-        );
-        // var mirrorMesh = new THREE.Mesh( planeGeo, groundMirror.material );
-        mirrorMesh.add( verticalMirror );
-        // mirrorMesh.rotateX( - Math.PI / 2 );
-        scene.add( mirrorMesh );
-        console.log( mirrorMesh );
+        var verticalMirrorMesh = new THREE.Mesh( planeGeo, verticalMirror.material );
+        verticalMirrorMesh.add( verticalMirror );
+        scene.add( verticalMirrorMesh );
 
-        var CrystalGroup = new THREE.Group();
-
-        // Generate random number of objects to be shown on the plane.
-
-        /// TODO: give these items the ability to carry gravity
-        var random = getRandomArbitrary(4, 50);
-        for (var i = 0; i <= random; i++) {
-          var geometry = new THREE.IcosahedronGeometry( 5, 0 );
-          var material = new THREE.MeshLambertMaterial( { color: 0xffffff, emissive: 0x333333, shading: THREE.FlatShading } );
-          var smallSphere = new THREE.Mesh( geometry, material );
-          smallSphere.position.y = getRandomArbitrary(-50, 50);
-          smallSphere.position.x = getRandomArbitrary(-50, 50);
-          CrystalGroup.add(smallSphere);
-        }
-        scene.add(CrystalGroup); 
+        addRandomShapes(objects);
+        addModel();
+        addChalaceModel();
 
         // ---- Add all the lights ---- //
         scene.add( new THREE.AmbientLight( 0xa6a6a6 ) );
 
         directionalLight = new THREE.DirectionalLight( 0x7FA8C7, 1.25 );
-        directionalLight.position.set( 500, 2000, 0 );
+        directionalLight.position.set( 1000, 2000, 100 );
         scene.add( directionalLight );
 
-        pointLight = new THREE.PointLight( 0x7FA8C7, 1.5 );
-        pointLight.position.set( 0, 0, 0 );
-        scene.add( pointLight );
-        console.log(scene.children);
-        document.addEventListener( 'mousedown', generateGravity, false );
+        var length = scene.children.length;
 
-
-      }
-
-      function generateGravity(event)
-      {
-        event.preventDefault();
-
-        var vector = new THREE.Vector3();
-        vector.set( ( event.clientX / window.innerWidth ) * 2 - 1, - ( event.clientY / window.innerHeight ) * 2 + 1, 0.5 );
-        vector.unproject( camera );
-
-        raycaster.ray.set( camera.position, vector.sub( camera.position ).normalize() );
-
-        //console.log(raycaster);
-
-        var intersects = raycaster.intersectObjects( scene.children[2].children );
-
-        console.log(intersects);
+        for ( var i = 0; i < length; i++) {
+          if ( scene.children[i] ) {
+            if ( scene.children[i].name == 'Crystals' ) {
+              renderer.domElement.addEventListener( 'mousedown', onMouseDown );
+            }
+          }
+        }
 
       }
 
       function render()
       {
-        verticalMirror.renderWithMirror( verticalMirror );
-
-        renderer.setClearColor( scene.fog.color, 1 );
         renderer.render(scene, camera);
+        verticalMirror.render();
+
+        for (var i = 0; i < objects.length; i++) {
+          var obj = objects[i];
+
+          if (obj) {
+            if (obj.position.y < -100) {                
+              scene.remove(obj);
+              objects.splice( i, 1 );
+            }
+          }
+          
+        }
+        if (!objects.length) {
+          is_playing = false;
+          addRandomShapes(objects);
+        }
       }
 
       function update()
@@ -219,10 +215,137 @@
         requestAnimationFrame( update );
 
         cameraControls.update();
+        scene.simulate(undefined, 2);
+
 
         render();
-        scene.simulate();
+
       }
+
+      // stick event listeners (TODO helper class)
+      //event listener
+      function onMouseDown( event_info ) {
+
+        mouse.x = ( event_info.clientX / window.innerWidth ) * 2 - 1;
+        mouse.y = - ( event_info.clientY / window.innerHeight ) * 2 + 1;
+
+        mouse_vector.set( mouse.x, mouse.y, mouse.z );
+        
+        // creates a place where the click can land in 3d space
+        mouse_vector.unproject(camera);
+        
+        var direction = mouse_vector.sub( camera.position ).normalize();
+        
+        ray.set( camera.position, direction );
+        
+        //asking the raycaster if the mouse click touched an object
+        intersects = ray.intersectObjects( objects, true );
+
+        //the ray will return an array with length of 1 or greater if the mouse click
+        //does touch the sphere object
+        if( intersects.length > 0) {
+          for (var i = 0; i < intersects.length; i++) {
+            if (intersects[i].object._physijs) {
+              intersects[i].object.material.color.setHex( Math.random() * 0xffffff );
+              intersects[i].object.mass = 1;
+              is_playing = true;
+            } 
+          }   
+        }
+      }
+      function addRandomShapes(objects) {
+
+        // Generate random number of objects to be shown on the plane.
+        var random = getRandomArbitrary(4, 50);
+        for (var i = 0; i <= random; i++) {
+          var geometry = new THREE.IcosahedronGeometry( 4, 0 );
+          var physijsMaterial = Physijs.createMaterial(
+            new THREE.MeshLambertMaterial( { color: 0xffffff, emissive: 0x333333, shading: THREE.FlatShading } ),
+            0,
+            0.02
+          );
+          var smallSphere = new Physijs.SphereMesh(
+            geometry,
+            physijsMaterial,
+            0
+          );
+
+
+          smallSphere.position.set( getRandomArbitrary(-50, 50), getRandomArbitrary(-50, 50), getRandomArbitrary(-10, 10) );
+          smallSphere.rotateY( - Math.PI / 2 );
+
+          smallSphere.name = "Crystals";
+          objects.push(smallSphere);
+          scene.add(smallSphere);
+
+        }
+      }
+
+      function addModel() {
+        var loader = new THREE.JSONLoader(); // init the loader util
+
+        // init loading
+        loader.load('tree/tree.js', function (geometry) {
+          // create a new material
+          var material = new THREE.MeshLambertMaterial({
+            colorAmbient: [0.480000026226044, 0.480000026226044, 0.480000026226044],
+            colorDiffuse: [0.480000026226044, 0.480000026226044, 0.480000026226044],
+            colorSpecular: [0.8999999761581421, 0.8999999761581421, 0.8999999761581421]
+          });
+          
+          // create a mesh with models geometry and material
+          var mesh = new THREE.Mesh(
+            geometry,
+            material
+          );
+          
+          mesh.rotation.y = -Math.PI/5;
+          mesh.position.y = -50;
+          mesh.position.z = 200;
+
+          scene.add(mesh);
+        });
+      }
+
+      function addChalaceModel() {
+        var loader = new THREE.JSONLoader(); // init the loader util
+
+        // init loading
+        loader.load('chalace/chalace.js', function (geometry) {
+          // create a new material
+          var material = new THREE.MeshLambertMaterial({
+            colorAmbient: [0.480000026226044, 0.480000026226044, 0.480000026226044],
+            colorDiffuse: [0.480000026226044, 0.480000026226044, 0.480000026226044],
+            colorSpecular: [0.8999999761581421, 0.8999999761581421, 0.8999999761581421]
+          });
+
+          // create a mesh with models geometry and material
+          var mesh = new THREE.Mesh(
+            geometry,
+            material
+          );
+
+          mesh.position.y = 1;
+          mesh.position.x = 1;
+          mesh.position.z = 1;
+
+          scene.add(mesh);
+        });
+      }
+
+      SC.stream("/tracks/177815733", function(sound) {
+        setInterval(function() {
+          if (is_playing === true && sound.playState !== 1) {
+            sound.play();
+          }
+          else if (is_playing === true) {
+            sound.resume();
+          }
+          if (is_playing === false) {
+            sound.pause();
+          }
+        }, 500)
+      });
 
       init();
       fillScene();
