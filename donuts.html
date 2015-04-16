@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Shape Minor</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <!-- for Google -->
+    <meta name="description" content="" />
+    <meta name="keywords" content="" />
+
+    <meta name="author" content="M Lauren Maxwell" />
+
+    <!-- for Facebook -->
+    <meta property="og:title" content="Shape Minor" />
+    <meta property="og:type" content="webgl" />
+    <meta property="og:image" content="/glamour-gems.png" />
+    <meta property="og:description" content="webgl rendering" />
+
+    <!-- for Twitter -->
+    <meta name="twitter:card" content="webgl" />
+    <meta name="twitter:title" content="Shape Minor" />
+    <meta name="twitter:description" content="rendering" />
+    <meta name="twitter:image" content="glamour-gems.png" />
+    <style>
+      body {
+        color: #888888;
+        font-family:Monospace;
+        font-size:13px;
+
+        background-color: #000;
+        margin: 0px;
+        overflow: hidden;
+      }
+
+      #info {
+        position: absolute;
+        top: 0px;
+        width: 200px;
+        left: calc(50% - 100px);
+        text-align: center;
+      }
+
+      a {
+        color: #00f;
+      }
+    </style>
+  </head>
+  <body>
+
+    <div id="container"><div id="info">
+      <a href="/">&lt;</a>
+      debug</div></div>
+
+    <script type="text/javascript" src="lib/three.js"></script>
+    <script type="text/javascript" src="lib/physi.js"></script>
+    <script type="text/javascript" src="lib/js/Mirror.js"></script>
+    <script type="text/javascript" src="lib/js/controls/OrbitControls.js"></script>
+
+  </body>
+  <script>
+      Physijs.scripts.worker = 'lib/physijs_worker.js';
+      Physijs.scripts.ammo = 'ammo.js';
+
+      var projector = new THREE.Projector(),
+        mouse_vector = new THREE.Vector3(),
+        mouse = { x: 0, y: 0, z: 1 },
+        ray = new THREE.Raycaster( new THREE.Vector3(0,0,0), new THREE.Vector3(0,0,0) ),
+        intersects = [],
+        objects = [];
+
+      var WIDTH = window.innerWidth;
+      var HEIGHT = window.innerHeight;
+
+      var VIEW_ANGLE = 50;
+      var ASPECT = WIDTH / HEIGHT;
+
+      var NEAR = 1;
+      var FAR = 600;
+
+      var camera, scene, renderer;
+
+      var cameraControls;
+
+      // --- Mirrors vars --- //
+      var verticalMirror, groundMirror;
+
+      var clock = new THREE.Clock();
+      var lightVal = 0, lightDir = 1;
+
+      var is_playing = false;
+
+      // Returns a random number between min and max
+      function getRandomArbitrary(min, max)
+      {
+        return Math.random() * (max - min) + min;
+      }
+
+      function init()
+      {
+        window.addEventListener('resize', function() {
+          var WIDTH = window.innerWidth,
+              HEIGHT = window.innerHeight;
+          renderer.setSize(WIDTH, HEIGHT);
+          camera.aspect = WIDTH / HEIGHT;
+          camera.updateProjectionMatrix();
+        });
+
+        // - Renderer - //
+        renderer = new THREE.WebGLRenderer({ alpha: true });
+        renderer.setSize( WIDTH, HEIGHT );
+
+         // - Scene - //
+        scene = new Physijs.Scene({ fixedTimeStep: 1 / 120 });
+
+        scene.setGravity(new THREE.Vector3( 0, -200, 0 ));
+
+        // scene.fog = new THREE.FogExp2( 0xE5EEF1, 0.005 );
+
+        // renderer.setClearColor( scene.fog.color, 1 );
+        renderer.setClearColor( 0xE5EEF1, 1 );
+        
+        // - Camera - //
+        camera = new THREE.PerspectiveCamera( VIEW_ANGLE, ASPECT, NEAR, FAR);
+        camera.position.set( 0, 0, 100 );
+
+        // - Orbit Camera Controls - //
+        cameraControls = new THREE.OrbitControls( camera, renderer.domElement );
+        cameraControls.target.set( 0, 0, 0 );
+        cameraControls.maxDistance = 200;
+        cameraControls.minDistance = 10;
+        cameraControls.update();
+
+        // - Update the Camera - //
+        var container = document.getElementById( 'container' );
+        container.appendChild( renderer.domElement );
+
+        console.log(renderer);
+
+        renderer.domElement.addEventListener('mousedown', onMouseDown);
+      }
+
+      function fillScene()
+      {
+        var planeGeoGround = new THREE.PlaneBufferGeometry( 2000, 2000 );
+
+        var bumpMapTexture = THREE.ImageUtils.loadTexture( 'textures/donutTex.jpg' );
+        bumpMapTexture.wrapS = bumpMapTexture.wrapT = THREE.RepeatWrapping;
+        bumpMapTexture.repeat.set( 5, 5 );
+
+        var planeBottom = new THREE.Mesh( planeGeoGround, new THREE.MeshPhongMaterial( { ambient: 0xB0C77B, color: 0xE8FED3, specular: 0xB0C77B, fog: true, bumpMap: bumpMapTexture, bumpScale: 0.3, opacity: .7, transparent: true } ) );
+
+        planeBottom.rotateX( - Math.PI / 2 );
+        scene.add( planeBottom );
+
+        var planeGeo = new THREE.PlaneBufferGeometry( 100.1, 100.1 );
+
+        // generate random donut on specified grid locations -- one every 20 on the z axis
+        // generate random image background 0-10 --11 entries
+
+        var imagesSelectionSrc = [
+          THREE.ImageUtils.loadTexture( 'textures/img_background/chuchu.jpeg' ),
+          THREE.ImageUtils.loadTexture( 'textures/img_background/floraltext.jpg' ),
+          THREE.ImageUtils.loadTexture( 'textures/img_background/flowers_ground.jpg' ),
+          THREE.ImageUtils.loadTexture( 'textures/img_background/flowers_ground2.jpg' ),
+          THREE.ImageUtils.loadTexture( 'textures/img_background/gundam2.jpg' ),
+          THREE.ImageUtils.loadTexture( 'textures/img_background/gwenblonde.jpeg' ),
+          THREE.ImageUtils.loadTexture( 'textures/img_background/locke.png' ),
+          THREE.ImageUtils.loadTexture( 'textures/img_background/ribs.jpg' ),
+          THREE.ImageUtils.loadTexture( 'textures/img_background/frogs_snap.jpg' ),
+          THREE.ImageUtils.loadTexture( 'textures/img_background/worstBand.jpg' ),
+          THREE.ImageUtils.loadTexture( 'textures/img_background/x1999.jpg' )        
+        ];
+
+        // ---- Add the units for the donuts ---- //
+        // Units that the grid takes up
+        var gridNum = 100;
+        // Calculate the number of objects for the grid
+        var numObjs = gridNum / 2;
+        // New row indication
+        var sqr = Math.round(Math.sqrt(gridNum));
+        // based on donuts size set this x value accumulation
+        var xValAcc = 20;
+        var xps = -gridNum;
+        var yps = gridNum;
+        var imgPos = 0;
+
+        // ---- Add the donuts ---- //
+        for ( var i = 0; i < numObjs; i ++ ) {
+          imgPos++;
+          if (imgPos > imagesSelectionSrc.length - 1) {imgPos = 0;}
+          
+          if (xps >= gridNum) {xps = -gridNum;}
+
+          // use the square root to calculate the row starting
+          if (i % sqr === 0) {
+            xps = -gridNum;
+            // based on donuts size set this x value accumulation
+            yps -= xValAcc;
+          }
+          else {xps += xValAcc;}
+          // get random image
+          var arrayPos = getRandomArbitrary(0, imagesSelectionSrc.length - 1),
+              roundedArrayPos = Math.round(arrayPos);
+
+          addDonuts(imagesSelectionSrc[roundedArrayPos], 'custom_models/donuts/donutPlain.js', xps, yps, i);
+        } 
+
+        // ---- Add all the lights ---- //
+        scene.add( new THREE.AmbientLight( 0xa6a6a6 ) );
+
+        directionalLight = new THREE.DirectionalLight( 0x7FA8C7, 1.25 );
+        directionalLight.position.set( 1000, 2000, 100 );
+        scene.add( directionalLight );
+
+      }
+
+      function render()
+      {
+        renderer.render(scene, camera);
+      }
+
+      function update()
+      {
+        requestAnimationFrame( update );
+        cameraControls.update();
+        scene.simulate(undefined, 2);
+        render();
+      }
+    
+      // positionArray
+      function addDonuts(imgSrc, modelsrc, x, y, index) {
+        var loader = new THREE.JSONLoader(); // init the loader util
+
+        // init loading
+        loader.load(modelsrc, function (geometry) {
+          var loader = new THREE.JSONLoader(); // init the loader util
+
+          var mapImage = imgSrc;
+          
+          var bumpMapTexture = THREE.ImageUtils.loadTexture( 'textures/crystal11.jpg' );
+          bumpMapTexture.wrapS = bumpMapTexture.wrapT = THREE.RepeatWrapping;
+          bumpMapTexture.repeat.set( 5, 5 );
+          var materialTexture = new THREE.MeshPhongMaterial( { map: mapImage, fog: true, bumpMap: bumpMapTexture, bumpScale: 0.3 } );
+
+          // create a mesh with models geometry and material
+          var mesh = new THREE.Mesh(
+            geometry,
+            materialTexture
+          );
+
+          mesh.position.x = x;
+          mesh.position.y = y;
+          mesh.position.z = 0;
+          
+          mesh.name = "donut " + index;
+          mesh.scale.set(10,10,10);
+
+          mesh.rotateX( Math.PI / 2 );
+          scene.add(mesh);
+        });
+      }
+      // Animates the donut when you click it.
+      function animate(object, near) {
+        if (near == true) {
+          object.position.x +=1;
+        }
+        if ( object.position.x == 5 ) {
+          object.position.x -=1;
+          if (object.position.x == 0)
+          {
+            object.position.x = 0;
+          }
+        }
+      }
+
+      function onMouseDown( event_info ) {
+
+        mouse.x = ( event_info.clientX / window.innerWidth ) * 2 - 1;
+        mouse.y = - ( event_info.clientY / window.innerHeight ) * 2 + 1;
+
+        mouse_vector.set( mouse.x, mouse.y, mouse.z );
+        
+        // creates a place where the click can land in 3d space
+        mouse_vector.unproject(camera);
+        
+        var direction = mouse_vector.sub( camera.position ).normalize();
+        
+        ray.set( camera.position, direction );
+        
+        //asking the raycaster if the mouse click touched an object
+        intersects = ray.intersectObjects( scene.children, true );
+
+        //the ray will return an array with length of 1 or greater if the mouse click
+        //does touch the sphere object
+        
+        if ( intersects.length > 1) {
+
+          for ( var x = 0; x < intersects.length; x++ ) {
+            console.log(intersects[x]);
+
+            var intersectsName = new RegExp("^donut");
+          }
+        }
+      }
+
+
+
+
+      init();
+      fillScene();
+      update();
+
+  </script>
+  <div id="container">
+      
+  </div>
+</body>

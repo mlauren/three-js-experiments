@@ -1,0 +1,33 @@
+# Blender MTL File: 'rock.blend'
+# Material Count: 3
+
+newmtl Material
+Ns 96.078431
+Ka 0.000000 0.000000 0.000000
+Kd 0.602353 0.602353 0.602353
+Ks 0.376471 0.376471 0.376471
+Ni 1.000000
+d 1.000000
+illum 2
+map_Kd /Users/mlmaxwell/Downloads/8d33de1f7b8d46d6527ba24b060b756a/LEAF17S1.bmp
+map_d /Users/mlmaxwell/Downloads/8d33de1f7b8d46d6527ba24b060b756a/LEAF17S1.bmp
+
+newmtl Material.002
+Ns 96.078431
+Ka 0.000000 0.000000 0.000000
+Kd 0.602353 0.602353 0.602353
+Ks 0.376471 0.376471 0.376471
+Ni 1.000000
+d 1.000000
+illum 2
+map_Kd /Users/mlmaxwell/Downloads/8d33de1f7b8d46d6527ba24b060b756a/LEAF17S1.bmp
+map_d /Users/mlmaxwell/Downloads/8d33de1f7b8d46d6527ba24b060b756a/LEAF17S1.bmp
+
+newmtl wire_198225087
+Ns 96.078431
+Ka 0.000000 0.000000 0.000000
+Kd 0.621176 0.705882 0.272941
+Ks 0.174510 0.174510 0.174510
+Ni 1.000000
+d 1.000000
+illum 2

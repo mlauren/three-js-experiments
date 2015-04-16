@@ -127,12 +127,12 @@
         
         // - Camera - //
         camera = new THREE.PerspectiveCamera( VIEW_ANGLE, ASPECT, NEAR, FAR);
-        camera.position.set( 400, 300, 300 );
+        camera.position.set( 400, 400, 300 );
 
         // - Orbit Camera Controls - //
         cameraControls = new THREE.OrbitControls( camera, renderer.domElement );
         cameraControls.target.set( 0, 0, 0 );
-        cameraControls.maxDistance = 100;
+        cameraControls.maxDistance = 300;
         cameraControls.minDistance = 10;
         cameraControls.update();
 
@@ -185,7 +185,6 @@
             }
           }
         }
-
       }
 
       function render()
@@ -202,7 +201,6 @@
               objects.splice( i, 1 );
             }
           }
-          
         }
         if (!objects.length) {
           is_playing = false;
@@ -213,13 +211,9 @@
       function update()
       {
         requestAnimationFrame( update );
-
         cameraControls.update();
         scene.simulate(undefined, 2);
-
-
         render();
-
       }
 
       // stick event listeners (TODO helper class)
@@ -270,8 +264,7 @@
             0
           );
 
-
-          smallSphere.position.set( getRandomArbitrary(-50, 50), getRandomArbitrary(-50, 50), getRandomArbitrary(-10, 10) );
+          smallSphere.position.set( getRandomArbitrary(-50, 50), getRandomArbitrary(-25, 50), getRandomArbitrary(-10, 10) );
           smallSphere.rotateY( - Math.PI / 2 );
 
           smallSphere.name = "Crystals";
@@ -285,7 +278,7 @@
         var loader = new THREE.JSONLoader(); // init the loader util
 
         // init loading
-        loader.load('tree/tree.js', function (geometry) {
+        loader.load('custom_models/tree/tree.js', function (geometry) {
           // create a new material
           var material = new THREE.MeshLambertMaterial({
             colorAmbient: [0.480000026226044, 0.480000026226044, 0.480000026226044],
@@ -311,7 +304,7 @@
         var loader = new THREE.JSONLoader(); // init the loader util
 
         // init loading
-        loader.load('chalace/chalace.js', function (geometry) {
+        loader.load('custom_models/chalace/chalace.js', function (geometry) {
           // create a new material
           var material = new THREE.MeshLambertMaterial({
             colorAmbient: [0.480000026226044, 0.480000026226044, 0.480000026226044],
@@ -325,9 +318,11 @@
             material
           );
 
-          mesh.position.y = 1;
+          mesh.position.y = -120;
           mesh.position.x = 1;
           mesh.position.z = 1;
+
+           mesh.scale.set(10,10,10);
 
           scene.add(mesh);
         });
