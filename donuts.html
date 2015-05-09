@@ -55,6 +55,7 @@
     <script type="text/javascript" src="lib/physi.js"></script>
     <script type="text/javascript" src="lib/js/Mirror.js"></script>
     <script type="text/javascript" src="lib/js/controls/OrbitControls.js"></script>
+    <script type='text/javascript' src='lib/js/Tween.js'></script>
 
   </body>
   <script>
@@ -121,13 +122,13 @@
         
         // - Camera - //
         camera = new THREE.PerspectiveCamera( VIEW_ANGLE, ASPECT, NEAR, FAR);
-        camera.position.set( 0, 0, 100 );
+        camera.position.set( 0, -15, 50 );
 
         // - Orbit Camera Controls - //
         cameraControls = new THREE.OrbitControls( camera, renderer.domElement );
         cameraControls.target.set( 0, 0, 0 );
-        cameraControls.maxDistance = 200;
-        cameraControls.minDistance = 10;
+        cameraControls.maxDistance = 100;
+        cameraControls.minDistance = 20;
         cameraControls.update();
 
         // - Update the Camera - //
@@ -146,13 +147,6 @@
         var bumpMapTexture = THREE.ImageUtils.loadTexture( 'textures/donutTex.jpg' );
         bumpMapTexture.wrapS = bumpMapTexture.wrapT = THREE.RepeatWrapping;
         bumpMapTexture.repeat.set( 5, 5 );
-
-        var planeBottom = new THREE.Mesh( planeGeoGround, new THREE.MeshPhongMaterial( { ambient: 0xB0C77B, color: 0xE8FED3, specular: 0xB0C77B, fog: true, bumpMap: bumpMapTexture, bumpScale: 0.3, opacity: .7, transparent: true } ) );
-
-        planeBottom.rotateX( - Math.PI / 2 );
-        scene.add( planeBottom );
-
-        var planeGeo = new THREE.PlaneBufferGeometry( 100.1, 100.1 );
 
         // generate random donut on specified grid locations -- one every 20 on the z axis
         // generate random image background 0-10 --11 entries
@@ -173,7 +167,7 @@
 
         // ---- Add the units for the donuts ---- //
         // Units that the grid takes up
-        var gridNum = 100;
+        var gridNum = 50;
         // Calculate the number of objects for the grid
         var numObjs = gridNum / 2;
         // New row indication
@@ -217,6 +211,7 @@
       function render()
       {
         renderer.render(scene, camera);
+        TWEEN.update();
       }
 
       function update()
@@ -253,24 +248,24 @@
           mesh.position.z = 0;
           
           mesh.name = "donut " + index;
-          mesh.scale.set(10,10,10);
+          mesh.scale.set( 10, 10, 10 );
 
           mesh.rotateX( Math.PI / 2 );
           scene.add(mesh);
         });
       }
       // Animates the donut when you click it.
-      function animate(object, near) {
-        if (near == true) {
-          object.position.x +=1;
-        }
-        if ( object.position.x == 5 ) {
-          object.position.x -=1;
-          if (object.position.x == 0)
-          {
-            object.position.x = 0;
-          }
-        }
+      function animate(object) {
+
+        var position = { x : object.position.x, y: object.position.y, z: 10 };
+        var target = { x : object.position.x, y: object.position.y, z: 0 };
+
+        var tween = new TWEEN.Tween(position).to(target, 1500);
+        tween.onUpdate(function(){
+          object.position.z = position.z;
+          object.position.z = position.z;
+        });
+        tween.start();
       }
 
       function onMouseDown( event_info ) {
@@ -297,8 +292,14 @@
 
           for ( var x = 0; x < intersects.length; x++ ) {
             console.log(intersects[x]);
-
-            var intersectsName = new RegExp("^donut");
+            console.log(intersects[x].object.name);
+            console.log(intersects[x].object.name.match("^donut"));
+            var intersectsMatch = intersects[x].object.name.match("^donut");
+            if (null != intersectsMatch) {
+              console.log(intersects[x].object.position);
+              // do animation to intersection match intersects[x].object
+              animate(intersects[x].object);
+            }
           }
         }
       }
