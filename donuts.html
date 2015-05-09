@@ -122,12 +122,12 @@
         
         // - Camera - //
         camera = new THREE.PerspectiveCamera( VIEW_ANGLE, ASPECT, NEAR, FAR);
-        camera.position.set( 0, -15, 50 );
+        camera.position.set( 5, -40, 50 );
 
         // - Orbit Camera Controls - //
         cameraControls = new THREE.OrbitControls( camera, renderer.domElement );
         cameraControls.target.set( 0, 0, 0 );
-        cameraControls.maxDistance = 100;
+        cameraControls.maxDistance = 50;
         cameraControls.minDistance = 20;
         cameraControls.update();
 
@@ -178,6 +178,9 @@
         var yps = gridNum;
         var imgPos = 0;
 
+        var bumpMapTexture = THREE.ImageUtils.loadTexture( 'textures/crystal11.jpg' );
+
+
         // ---- Add the donuts ---- //
         for ( var i = 0; i < numObjs; i ++ ) {
           imgPos++;
@@ -196,7 +199,7 @@
           var arrayPos = getRandomArbitrary(0, imagesSelectionSrc.length - 1),
               roundedArrayPos = Math.round(arrayPos);
 
-          addDonuts(imagesSelectionSrc[roundedArrayPos], 'custom_models/donuts/donutPlain.js', xps, yps, i);
+          addDonuts(bumpMapTexture, 'custom_models/donuts/donutPlain.js', xps, yps, i);
         } 
 
         // ---- Add all the lights ---- //
@@ -223,19 +226,18 @@
       }
     
       // positionArray
-      function addDonuts(imgSrc, modelsrc, x, y, index) {
+      function addDonuts(bumpMapTexture, modelsrc, x, y, index) {
         var loader = new THREE.JSONLoader(); // init the loader util
 
         // init loading
         loader.load(modelsrc, function (geometry) {
           var loader = new THREE.JSONLoader(); // init the loader util
 
-          var mapImage = imgSrc;
+          // var mapImage = imgSrc;
           
-          var bumpMapTexture = THREE.ImageUtils.loadTexture( 'textures/crystal11.jpg' );
           bumpMapTexture.wrapS = bumpMapTexture.wrapT = THREE.RepeatWrapping;
           bumpMapTexture.repeat.set( 5, 5 );
-          var materialTexture = new THREE.MeshPhongMaterial( { map: mapImage, fog: true, bumpMap: bumpMapTexture, bumpScale: 0.3 } );
+          var materialTexture = new THREE.MeshPhongMaterial( { fog: false, bumpMap: bumpMapTexture, bumpScale: 0.3 } );
 
           // create a mesh with models geometry and material
           var mesh = new THREE.Mesh(
