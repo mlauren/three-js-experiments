@@ -49,7 +49,10 @@
   <body>
 
     <div id="container"><div id="info">
-      <a href="passing.html"><i class="fa fa-long-arrow-left"></i> Prev</a></div></div>
+      <a href="passing.html"><i class="fa fa-long-arrow-left"></i> Prev</a>
+      <a id="expand-full-screen" href="#"><i class="fa fa-expand"></i></a>
+    </div></div>
+
 
     <script type="text/javascript" src="lib/three.js"></script>
     <script type="text/javascript" src="lib/physi.js"></script>
@@ -59,6 +62,23 @@
 
   </body>
   <script>
+      function expandFullScreen() {
+        var p = document.getElementById("expand-full-screen");
+          // NOTE: showAlert(); or showAlert(param); will NOT work here.
+          // Must be a reference to a function name, not a function call.
+          p.onclick = function(event) {
+
+            var container = document.getElementById( 'container' );
+            container.webkitRequestFullscreen(Element.ALLOW_KEYBOARD_INPUT);
+            container.mozRequestFullScreen();
+            container.msRequestFullscreen();
+            container.requestFullscreen();
+            event.preventDefault();
+          };
+
+      }
+      expandFullScreen();
+
       Physijs.scripts.worker = 'lib/physijs_worker.js';
       Physijs.scripts.ammo = 'ammo.js';
 
@@ -305,9 +325,6 @@
           }
         }
       }
-
-
-
 
       init();
       fillScene();

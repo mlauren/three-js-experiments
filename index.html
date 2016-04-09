@@ -51,6 +51,7 @@
 
      <div id="container"><div id="info">
       <a href="passing.html">Next <i class="fa fa-long-arrow-right"></i></a>
+      <a id="expand-full-screen" href="#"><i class="fa fa-expand"></i></a>
       </div></div>
 
     <script type="text/javascript" src="lib/three.js"></script>
@@ -59,7 +60,7 @@
     <script type="text/javascript" src="lib/js/controls/OrbitControls.js"></script>
 
 
-    <!-- ---------------- Custom Shader Code ------------------------ -->
+    <!-- Custom Shader Code -->
     <script id="vertexShader" type="x-shader/x-vertex">
     uniform vec3 viewVector;
     uniform float c;
@@ -85,8 +86,25 @@
         gl_FragColor = vec4( glow, .25 );
     }
     </script>
-    <!-- ----------------------------------------------------------- -->
+    <!--  -->
     <script>
+      function expandFullScreen() {
+        var p = document.getElementById("expand-full-screen");
+          // NOTE: showAlert(); or showAlert(param); will NOT work here.
+          // Must be a reference to a function name, not a function call.
+          p.onclick = function(event) {
+
+            var container = document.getElementById( 'container' );
+            container.webkitRequestFullscreen(Element.ALLOW_KEYBOARD_INPUT);
+            container.mozRequestFullScreen();
+            container.msRequestFullscreen();
+            container.requestFullscreen();
+            event.preventDefault();
+          };
+
+      }
+      expandFullScreen();
+
       Physijs.scripts.worker = 'lib/physijs_worker.js';
       Physijs.scripts.ammo = 'ammo.js';
 
@@ -96,8 +114,10 @@
       var VIEW_ANGLE = 50;
       var ASPECT = WIDTH / HEIGHT;
 
+      // var NEAR = 1;
+      // var FAR = 600;
       var NEAR = 1;
-      var FAR = 600;
+      var FAR = 10000;
 
       var camera, scene, renderer;
 
@@ -110,6 +130,9 @@
       var lightVal = 0, lightDir = 1;
 
       var polyhedron;
+      var meshDummy;
+      var dummyGlow;
+      var dummyGlow2;
       var group = new THREE.Group();
 
       // Returns a random number between min and max
@@ -143,8 +166,8 @@
         // - Orbit Camera Controls - //
         cameraControls = new THREE.OrbitControls( camera, renderer.domElement );
         cameraControls.target.set( 0, 50, 0 );
-        cameraControls.maxDistance = 100;
-        cameraControls.minDistance = 10;
+        // cameraControls.maxDistance = 800;
+        // cameraControls.minDistance = 10;
         cameraControls.update();
 
         raycaster = new THREE.Raycaster();
@@ -194,7 +217,7 @@
 
         raycaster.ray.set( camera.position, vector.sub( camera.position ).normalize() );
 
-        var intersects = raycaster.intersectObject( polyhedron );
+        var intersects = raycaster.intersectObject( meshDummy );
         if (intersects.length === 1) {
           intersects[ 0 ].object.material.ambient.setHex( Math.random() * 0xffffff );
           // Generate a tiny new crystal
@@ -289,6 +312,7 @@
         mapTexture.repeat.set( 4, 4 );
 
 
+        /*
         var geometry = new THREE.IcosahedronGeometry( 20, 0 );
         // geometry.mergeVertices();
         var material = new THREE.MeshPhongMaterial( { ambient: new THREE.Color().setHex( Math.random() * 0xffffff ), color: 0xFF8EE3, specular: 0xffffff, bumpMap: mapTexture, fog: true, shininess: 50, shading: THREE.FlatShading, transparent: false, reflectivity: 10 } )
@@ -296,12 +320,44 @@
         polyhedron.position.set(0,0,0);
         scene.add(polyhedron);
 
+        
+
         polyhedron.rotateX( Math.PI / 1.5);
         polyhedron.rotateY( -Math.PI / 3.75 );
         polyhedron.position.set(-28, 30, -20);
 
         // add the sphere to the scene
         group.add(polyhedron);
+
+        */
+
+        var loader = new THREE.JSONLoader();
+        loader.load('custom_models/dummy.json', function (geometry) {
+          var loader = new THREE.JSONLoader(); // init the loader util
+
+          var bumpMapTexture = THREE.ImageUtils.loadTexture( 'textures/crystal11.jpg' );
+
+          bumpMapTexture.wrapS = bumpMapTexture.wrapT = THREE.RepeatWrapping;
+          bumpMapTexture.repeat.set( 5, 5 );
+          var materialTexture = new THREE.MeshPhongMaterial( { ambient: new THREE.Color().setHex( Math.random() * 0xffffff ), color: 0xFF8EE3, specular: 0xffffff, fog: false, bumpMap: bumpMapTexture, bumpScale: 0.3, transparent: true,
+            opacity: .5 } );
+          // create a mesh with models geometry and material
+          meshDummy = new THREE.Mesh(
+            geometry,
+            materialTexture
+          );
+
+          meshDummy.position.x = 5;
+          meshDummy.position.y = 0;
+          meshDummy.position.z = 0;
+
+          meshDummy.name = "rock";
+          meshDummy.scale.set( 5, 5, 5 );
+
+          //meshDummy.rotateX( Math.PI / 2 );
+          scene.add(meshDummy);
+          group.add(meshDummy);
+        });
 
         // create custom material from the shader code above
         // that is within specially labeled script tags
@@ -322,12 +378,52 @@
           transparent: true
         }   );
 
+        var loader = new THREE.JSONLoader();
+        loader.load('custom_models/dummy.json', function (geometry) {
+          dummyGlow = new THREE.Mesh(
+            geometry,
+            customMaterial.clone()
+          );
+
+          dummyGlow.position.x = 0;
+          dummyGlow.position.y = -3;
+          dummyGlow.position.z = 0;
+
+          dummyGlow.name = "dummyGlow";
+          dummyGlow.scale.set( 6, 6, 6 );
+
+          //dummyGlow.rotateX( Math.PI / 2 );
+          scene.add(dummyGlow);
+          group.add(dummyGlow);
+        });
+
+        var loader = new THREE.JSONLoader();
+        loader.load('custom_models/dummy.json', function (geometry) {
+          dummyGlow2 = new THREE.Mesh(
+            geometry,
+            customMaterial.clone()
+          );
+
+          dummyGlow2.position.x = 0;
+          dummyGlow2.position.y = -5;
+          dummyGlow2.position.z = 0;
+
+          dummyGlow2.name = "dummyGlow2";
+          dummyGlow2.scale.set( 6, 6, 6 );
+
+          //dummyGlow2.rotateX( Math.PI / 2 );
+          scene.add(dummyGlow2);
+          group.add(dummyGlow2);
+        });
+
+        /*
+
         this.moonGlow = new THREE.Mesh( sphere, customMaterial.clone() );
         moonGlow.position.x = polyhedron.position.x;
         moonGlow.position.y = polyhedron.position.y;
         moonGlow.position.z = polyhedron.position.z;
         moonGlow.scale.multiplyScalar(1.33);
-        group.add( moonGlow );
+        group.add( moonGlow );*/
 
 
         var imagePrefix = "textures/skybox/bluefreeze_";
@@ -387,13 +483,11 @@
       function update() {
         requestAnimationFrame( update );
 
+        // dummyGlow.rotation.x+=2/200;
+        dummyGlow.rotation.y+=2/100;
 
-        /*--- end render changes to lighting --- */
-        /*--- render animation --- */
-        polyhedron.rotation.x+=2/200;
-        polyhedron.rotation.y+=2/200;
-        moonGlow.rotation.x+=2/200;
-        moonGlow.rotation.y+=2/200;
+        //meshDummy.rotation.x+=2/200;
+        meshDummy.rotation.y+=2/100;
 
         var axis = new THREE.Vector3(0.15,0,0.005);
         var increment = 0;
