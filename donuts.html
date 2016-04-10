@@ -50,6 +50,7 @@
 
     <div id="container"><div id="info">
       <a href="passing.html"><i class="fa fa-long-arrow-left"></i> Prev</a>
+      <a href="super_fog.html">Next <i class="fa fa-long-arrow-right"></i></a>
       <a id="expand-full-screen" href="#"><i class="fa fa-expand"></i></a>
     </div></div>
 
@@ -118,13 +119,6 @@
 
       function init()
       {
-        window.addEventListener('resize', function() {
-          var WIDTH = window.innerWidth,
-              HEIGHT = window.innerHeight;
-          renderer.setSize(WIDTH, HEIGHT);
-          camera.aspect = WIDTH / HEIGHT;
-          camera.updateProjectionMatrix();
-        });
 
         // - Renderer - //
         renderer = new THREE.WebGLRenderer({ alpha: true });
@@ -158,6 +152,15 @@
         console.log(renderer);
 
         renderer.domElement.addEventListener('mousedown', onMouseDown);
+        window.addEventListener( 'resize', onWindowResize, false );
+      }
+      function onWindowResize(){
+
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+
+        renderer.setSize( window.innerWidth, window.innerHeight );
+
       }
 
       function fillScene()

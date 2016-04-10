@@ -50,6 +50,7 @@
   <body>
 
      <div id="container"><div id="info">
+     <a href="super_fog.html"><i class="fa fa-long-arrow-left"></i> Prev</a>
       <a href="passing.html">Next <i class="fa fa-long-arrow-right"></i></a>
       <a id="expand-full-screen" href="#"><i class="fa fa-expand"></i></a>
       </div></div>
@@ -117,7 +118,7 @@
       // var NEAR = 1;
       // var FAR = 600;
       var NEAR = 1;
-      var FAR = 10000;
+      var FAR = 500;
 
       var camera, scene, renderer;
 
@@ -166,16 +167,25 @@
         // - Orbit Camera Controls - //
         cameraControls = new THREE.OrbitControls( camera, renderer.domElement );
         cameraControls.target.set( 0, 50, 0 );
-        // cameraControls.maxDistance = 800;
-        // cameraControls.minDistance = 10;
+        cameraControls.maxDistance = 250;
+        cameraControls.minDistance = 10;
         cameraControls.update();
 
         raycaster = new THREE.Raycaster();
         document.addEventListener( 'mousedown', generateObjects, false );
+        window.addEventListener( 'resize', onWindowResize, false );
 
         // - Update the Camera - //
         var container = document.getElementById( 'container' );
         container.appendChild( renderer.domElement );
+      }
+      function onWindowResize(){
+
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+
+        renderer.setSize( window.innerWidth, window.innerHeight );
+
       }
 
       function generateNewCrystal() {
